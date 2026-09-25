@@ -1,53 +1,157 @@
-# Instalasi-Odoo-14-With-Docker
-1. Install Docker
+# Instalasi Odoo 14 With Docker
+
+Panduan lengkap instalasi **Odoo 14 + PostgreSQL 14 menggunakan Docker**.
+
+Target struktur:
+
+```text
+/mnt/storage/odoo14/
+├── Dockerfile
+├── docker-compose.yml
+├── config/
+│   └── odoo.conf
+├── addons/
+├── custom_addons/
+├── odoo-data/
+├── postgres/
+└── scripts/
+```
+
+---
+
+# 1. Install Docker
+
+Update package:
+
+```bash
 sudo apt update
+```
+
+Install Docker, Docker Compose Plugin, Git, dan Curl:
+
+```bash
 sudo apt install -y docker.io docker-compose-plugin git curl
+```
 
 Aktifkan Docker:
 
+```bash
 sudo systemctl enable --now docker
+```
 
-Cek:
+Cek Docker:
 
+```bash
 docker --version
+```
+
+Cek Docker Compose:
+
+```bash
 docker compose version
+```
 
-Tambahkan user ubuntu ke Docker:
+Tambahkan user `ubuntu` ke group Docker:
 
+```bash
 sudo usermod -aG docker $USER
+```
 
-Logout/login SSH lagi, kemudian:
+**Logout dan login SSH kembali** agar perubahan group aktif.
 
+Kemudian test:
+
+```bash
 docker ps
-2. Buat folder Odoo
+```
+
+Jika tidak ada error permission, Docker sudah siap.
+
+---
+
+# 2. Buat Folder Odoo
+
+Buat folder project:
+
+```bash
 sudo mkdir -p /mnt/storage/odoo14
+```
+
+Set ownership:
+
+```bash
 sudo chown -R ubuntu:ubuntu /mnt/storage/odoo14
+```
 
-Masuk:
+Masuk ke folder project:
 
+```bash
 cd /mnt/storage/odoo14
+```
 
-Buat struktur:
+Buat struktur folder:
 
+```bash
 mkdir -p config
+```
+
+```bash
 mkdir -p addons
+```
+
+```bash
 mkdir -p custom_addons
+```
+
+```bash
 mkdir -p odoo-data
+```
+
+```bash
 mkdir -p postgres
+```
+
+```bash
 mkdir -p scripts
+```
 
-Cek:
+Install `tree` jika belum tersedia:
 
-tree -L 2 /mnt/storage/odoo14
-
-Kalau tree belum ada:
-
+```bash
 sudo apt install -y tree
-3. Buat Dockerfile
+```
+
+Cek struktur:
+
+```bash
+tree -L 2 /mnt/storage/odoo14
+```
+
+Hasil awal kira-kira:
+
+```text
+/mnt/storage/odoo14
+├── addons
+├── config
+├── custom_addons
+├── odoo-data
+├── postgres
+└── scripts
+```
+
+---
+
+# 3. Buat Dockerfile
+
+Buat file:
+
+```bash
 nano /mnt/storage/odoo14/Dockerfile
+```
 
-Paste semua ini:
+Paste seluruh isi berikut:
 
+```dockerfile
 FROM python:3.8-slim-bullseye
 
 # ---------------------------------------------------------
@@ -216,17 +320,29 @@ CMD [
     "-c",
     "/etc/odoo/odoo.conf"
 ]
+```
 
-Save:
+Simpan:
 
+```text
 Ctrl + O
 Enter
 Ctrl + X
-4. Buat docker-compose.yml
+```
+
+---
+
+# 4. Buat docker-compose.yml
+
+Buat file:
+
+```bash
 nano /mnt/storage/odoo14/docker-compose.yml
+```
 
 Paste:
 
+```yaml
 services:
 
   db:
@@ -267,17 +383,29 @@ services:
       - ./config:/etc/odoo
       - ./addons:/mnt/extra-addons
       - ./custom_addons:/mnt/custom-addons
+```
 
-Save:
+Simpan:
 
+```text
 Ctrl + O
 Enter
 Ctrl + X
-5. Buat odoo.conf
+```
+
+---
+
+# 5. Buat odoo.conf
+
+Buat file:
+
+```bash
 nano /mnt/storage/odoo14/config/odoo.conf
+```
 
 Paste:
 
+```ini
 [options]
 
 admin_passwd = CHANGE_THIS_MASTER_PASSWORD
@@ -304,163 +432,921 @@ limit_time_real = 1200
 
 limit_memory_hard = 2684354560
 limit_memory_soft = 2147483648
+```
 
-Save:
+Simpan:
 
+```text
 Ctrl + O
 Enter
 Ctrl + X
-Ganti master password
+```
 
-Jangan commit password production ke GitHub.
+## Ganti Master Password
 
-Misalnya sebelum deployment:
+Jangan menggunakan:
 
-nano /mnt/storage/odoo14/config/odoo.conf
-
-ubah:
-
+```ini
 admin_passwd = CHANGE_THIS_MASTER_PASSWORD
+```
 
-menjadi password master yang kamu inginkan.
+untuk production.
 
-6. Permission
+Edit:
 
-Untuk folder project:
+```bash
+nano /mnt/storage/odoo14/config/odoo.conf
+```
 
+Contoh:
+
+```ini
+admin_passwd = PASSWORD_MASTER_KAMU
+```
+
+**Jangan commit password production ke GitHub.**
+
+---
+
+# 6. Permission
+
+Set ownership project:
+
+```bash
 sudo chown -R ubuntu:ubuntu /mnt/storage/odoo14
+```
 
-PostgreSQL container menggunakan UID 999 pada image ini.
+PostgreSQL container menggunakan UID `999` pada image ini:
 
+```bash
 sudo chown -R 999:999 /mnt/storage/odoo14/postgres
+```
 
-Odoo container menggunakan user odoo.
+Untuk Odoo:
 
-Di Dockerfile user odoo dibuat sebagai system user, yang biasanya UID pertama yang tersedia setelah base image. Lebih aman cek UID image setelah build, jadi jangan menebak UID sekarang.
-
-Untuk awal:
-
+```bash
 sudo chown -R ubuntu:ubuntu /mnt/storage/odoo14/odoo-data
+```
+
+Addon:
+
+```bash
 sudo chown -R ubuntu:ubuntu /mnt/storage/odoo14/addons
+```
+
+Custom addon:
+
+```bash
 sudo chown -R ubuntu:ubuntu /mnt/storage/odoo14/custom_addons
+```
+
+Config:
+
+```bash
 sudo chown -R ubuntu:ubuntu /mnt/storage/odoo14/config
-7. Build Odoo
+```
+
+> UID user `odoo` di dalam image tidak perlu ditebak dari host. User `odoo` dibuat ketika Docker image dibuild.
+
+---
+
+# 7. Build Odoo
 
 Masuk project:
 
+```bash
 cd /mnt/storage/odoo14
+```
 
-Build:
+Build image:
 
+```bash
 docker compose build --no-cache
+```
 
-Ini bisa cukup lama.
+Proses build dapat membutuhkan waktu cukup lama.
 
 Setelah selesai:
 
+```bash
 docker images | grep odoo14
-8. Jalankan PostgreSQL + Odoo
+```
+
+Target:
+
+```text
+odoo14-odoo
+```
+
+---
+
+# 8. Jalankan PostgreSQL + Odoo
+
+Jalankan:
+
+```bash
+cd /mnt/storage/odoo14
+```
+
+Kemudian:
+
+```bash
 docker compose up -d
+```
 
 Cek:
 
+```bash
 docker compose ps
+```
 
 Target:
 
+```text
 odoo14-db    running
 odoo14       running
-9. Cek PostgreSQL
+```
+
+---
+
+# 9. Cek PostgreSQL
+
+Cek versi PostgreSQL:
+
+```bash
 docker exec -it odoo14-db psql -U odoo14 -d postgres -c "SELECT version();"
+```
 
-Harus menunjukkan PostgreSQL 14.x.
+Harus menunjukkan:
 
-10. Cek pg_dump
+```text
+PostgreSQL 14.x
+```
 
-Ini penting untuk backup.
+---
 
+# 10. Cek pg_dump
+
+Backup database membutuhkan `pg_dump`.
+
+Cek versi:
+
+```bash
 docker exec -it odoo14 pg_dump --version
+```
 
 Target:
 
+```text
 pg_dump (PostgreSQL) 14.x
+```
 
-Jangan sampai:
+Pastikan bukan:
 
-pg_dump 13.x
+```text
+pg_dump (PostgreSQL) 13.x
+```
 
-karena PostgreSQL server kita 14.
+atau versi PostgreSQL yang lebih lama.
 
-11. Cek koneksi Odoo → PostgreSQL
+Client PostgreSQL di image Odoo sengaja menggunakan PostgreSQL 14 agar sesuai dengan PostgreSQL server.
+
+---
+
+# 11. Cek Koneksi Odoo → PostgreSQL
+
+Cek DNS/container network:
+
+```bash
 docker exec -it odoo14 getent hosts db
+```
 
-Kemudian:
+Kemudian test koneksi PostgreSQL dari container Odoo:
 
+```bash
 docker exec -e PGPASSWORD=odoo -it odoo14 \
 psql -h db -U odoo14 -d postgres \
 -c "SELECT version();"
-12. Cek Odoo
+```
+
+Jika PostgreSQL version muncul, koneksi Odoo → PostgreSQL berhasil.
+
+---
+
+# 12. Cek Odoo
+
+Test port Odoo:
+
+```bash
 curl -I http://127.0.0.1:8069/web
+```
 
-Biasanya akan mendapat:
+Response yang mungkin:
 
+```text
 HTTP/1.0 303 SEE OTHER
+```
 
 atau response HTTP Odoo lainnya.
 
+Cek container:
+
+```bash
+docker compose ps
+```
+
 Cek log:
 
+```bash
 docker logs --tail 100 odoo14
+```
 
-Live:
+Untuk melihat log secara live:
 
+```bash
 docker logs -f odoo14
+```
 
-Keluar:
+Keluar dari live log:
 
+```text
 Ctrl + C
-13. Permission addons
+```
 
-Pastikan:
+---
 
+# 13. Permission Addons
+
+Set ownership:
+
+```bash
 sudo chown -R ubuntu:ubuntu /mnt/storage/odoo14/addons
+```
+
+```bash
 sudo chown -R ubuntu:ubuntu /mnt/storage/odoo14/custom_addons
+```
 
-Kemudian:
+Permission directory custom addons:
 
+```bash
 find /mnt/storage/odoo14/custom_addons -type d -exec chmod 755 {} \;
+```
+
+Permission file custom addons:
+
+```bash
 find /mnt/storage/odoo14/custom_addons -type f -exec chmod 644 {} \;
+```
 
-Sama untuk addons:
+Permission directory addons:
 
+```bash
 find /mnt/storage/odoo14/addons -type d -exec chmod 755 {} \;
+```
+
+Permission file addons:
+
+```bash
 find /mnt/storage/odoo14/addons -type f -exec chmod 644 {} \;
-14. Test custom addon
+```
 
-Misalnya:
+---
 
+# 14. Test Custom Addon
+
+Contoh struktur:
+
+```text
 custom_addons/
 └── odoo_home_screen_14/
     ├── __init__.py
     ├── __manifest__.py
     └── ...
+```
 
-Masuk container:
+Cek folder custom addons dari host:
 
+```bash
+ls -lah /mnt/storage/odoo14/custom_addons
+```
+
+Masuk ke container Odoo:
+
+```bash
 docker exec -it odoo14 bash
+```
+
+Cek custom addons:
+
+```bash
+ls -lah /mnt/custom-addons
+```
+
+Cek addons path:
+
+```bash
+grep addons_path /etc/odoo/odoo.conf
+```
+
+Harus menunjukkan:
+
+```text
+addons_path = /opt/odoo/addons,/mnt/extra-addons,/mnt/custom-addons
+```
+
+Keluar dari container:
+
+```bash
+exit
+```
+
+---
+
+# 15. Restart Odoo
+
+Restart semua service:
+
+```bash
+cd /mnt/storage/odoo14
+docker compose restart
+```
 
 Cek:
 
-ls -lah /mnt/custom-addons
+```bash
+docker compose ps
+```
 
-Cek Odoo:
+---
 
-grep addons_path /etc/odoo/odoo.conf
+# 16. Stop Odoo
 
-Harus:
+Stop container:
 
-/opt/odoo/addons,/mnt/extra-addons,/mnt/custom-addons
+```bash
+cd /mnt/storage/odoo14
+docker compose stop
+```
+
+Cek:
+
+```bash
+docker compose ps
+```
+
+---
+
+# 17. Start Odoo Kembali
+
+Start container:
+
+```bash
+cd /mnt/storage/odoo14
+docker compose start
+```
+
+Cek:
+
+```bash
+docker compose ps
+```
+
+---
+
+# 18. Update Custom Addon
+
+Setelah menambahkan atau mengubah addon:
+
+```bash
+cd /mnt/storage/odoo14
+```
+
+Restart Odoo:
+
+```bash
+docker compose restart odoo
+```
+
+Jika membutuhkan upgrade module dari command line:
+
+```bash
+docker exec -it odoo14 \
+python3 /opt/odoo/odoo-bin \
+-c /etc/odoo/odoo.conf \
+-d NAMA_DATABASE \
+-u NAMA_MODULE \
+--stop-after-init
+```
+
+Contoh:
+
+```bash
+docker exec -it odoo14 \
+python3 /opt/odoo/odoo-bin \
+-c /etc/odoo/odoo.conf \
+-d HLB \
+-u odoo_home_screen_14 \
+--stop-after-init
+```
+
+Kemudian restart:
+
+```bash
+docker compose restart odoo
+```
+
+---
+
+# 19. Cek Semua Container
+
+```bash
+docker ps
+```
+
+Atau:
+
+```bash
+docker compose ps
+```
+
+---
+
+# 20. Cek Penggunaan Docker
+
+```bash
+docker system df
+```
+
+Cek penggunaan disk:
+
+```bash
+df -h
+```
+
+Cek folder project:
+
+```bash
+du -sh /mnt/storage/odoo14/*
+```
+
+---
+
+# 21. Backup Database dan Filestore
+
+Backup harus mencakup:
+
+1. PostgreSQL database
+2. Odoo filestore
+
+Jangan hanya melakukan backup PostgreSQL.
+
+Buat folder backup:
+
+```bash
+mkdir -p /mnt/storage/odoo14/backups
+```
+
+Contoh backup database:
+
+```bash
+docker exec odoo14-db pg_dump \
+-U odoo14 \
+-F c \
+-d NAMA_DATABASE \
+> /mnt/storage/odoo14/backups/NAMA_DATABASE_$(date +%Y-%m-%d).dump
+```
+
+Contoh:
+
+```bash
+docker exec odoo14-db pg_dump \
+-U odoo14 \
+-F c \
+-d HLB \
+> /mnt/storage/odoo14/backups/HLB_$(date +%Y-%m-%d).dump
+```
+
+Backup filestore:
+
+```bash
+tar -czf \
+/mnt/storage/odoo14/backups/HLB_filestore_$(date +%Y-%m-%d).tar.gz \
+-C /mnt/storage/odoo14/odoo-data \
+filestore
+```
+
+> Untuk backup production, gunakan script backup otomatis dan retention. Jangan mengandalkan backup manual.
+
+---
+
+# 22. Restore Database
+
+Stop Odoo terlebih dahulu:
+
+```bash
+cd /mnt/storage/odoo14
+docker compose stop odoo
+```
+
+Restore database menggunakan:
+
+```bash
+cat backup.dump | docker exec -i odoo14-db \
+pg_restore \
+-U odoo14 \
+-d NAMA_DATABASE \
+--clean \
+--if-exists
+```
+
+Contoh:
+
+```bash
+cat HLB_backup.dump | docker exec -i odoo14-db \
+pg_restore \
+-U odoo14 \
+-d HLB \
+--clean \
+--if-exists
+```
+
+Start Odoo:
+
+```bash
+docker compose start odoo
+```
+
+Cek:
+
+```bash
+docker compose ps
+```
+
+---
+
+# 23. Rebuild Docker Image
+
+Jika `Dockerfile` berubah:
+
+```bash
+cd /mnt/storage/odoo14
+```
+
+Build ulang:
+
+```bash
+docker compose build
+```
+
+Kemudian:
+
+```bash
+docker compose up -d
+```
+
+Jika ingin build dari awal tanpa cache:
+
+```bash
+docker compose build --no-cache
+```
+
+Kemudian:
+
+```bash
+docker compose up -d
+```
+
+---
+
+# 24. Update Odoo Source
+
+Dockerfile menggunakan:
+
+```dockerfile
+git clone \
+    --depth 1 \
+    --branch 14.0 \
+    https://github.com/odoo/odoo.git \
+    /opt/odoo
+```
+
+Jika ingin mengambil source Odoo 14 terbaru dari branch `14.0`, rebuild image:
+
+```bash
+cd /mnt/storage/odoo14
+```
+
+```bash
+docker compose build --no-cache
+```
+
+Kemudian:
+
+```bash
+docker compose up -d
+```
+
+---
+
+# 25. Useful Docker Commands
+
+Melihat semua container:
+
+```bash
+docker ps -a
+```
+
+Melihat image:
+
+```bash
+docker images
+```
+
+Melihat log Odoo:
+
+```bash
+docker logs odoo14
+```
+
+Melihat log PostgreSQL:
+
+```bash
+docker logs odoo14-db
+```
+
+Masuk container Odoo:
+
+```bash
+docker exec -it odoo14 bash
+```
+
+Masuk PostgreSQL:
+
+```bash
+docker exec -it odoo14-db bash
+```
+
+Masuk PostgreSQL menggunakan psql:
+
+```bash
+docker exec -it odoo14-db \
+psql -U odoo14 -d postgres
+```
 
 Keluar:
 
-exit
+```text
+\q
+```
+
+---
+
+# 26. Final Checklist
+
+Setelah instalasi selesai, jalankan:
+
+```bash
+cd /mnt/storage/odoo14
+```
+
+Cek Docker:
+
+```bash
+docker --version
+```
+
+Cek Compose:
+
+```bash
+docker compose version
+```
+
+Cek container:
+
+```bash
+docker compose ps
+```
+
+Cek PostgreSQL:
+
+```bash
+docker exec -it odoo14-db \
+psql -U odoo14 -d postgres \
+-c "SELECT version();"
+```
+
+Cek pg_dump:
+
+```bash
+docker exec -it odoo14 pg_dump --version
+```
+
+Cek koneksi Odoo → PostgreSQL:
+
+```bash
+docker exec -e PGPASSWORD=odoo -it odoo14 \
+psql -h db -U odoo14 -d postgres \
+-c "SELECT version();"
+```
+
+Cek Odoo:
+
+```bash
+curl -I http://127.0.0.1:8069/web
+```
+
+Cek log:
+
+```bash
+docker logs --tail 100 odoo14
+```
+
+Cek addons:
+
+```bash
+docker exec -it odoo14 \
+ls -lah /mnt/custom-addons
+```
+
+Cek addons path:
+
+```bash
+docker exec -it odoo14 \
+grep addons_path /etc/odoo/odoo.conf
+```
+
+Target:
+
+```text
+/opt/odoo/addons,/mnt/extra-addons,/mnt/custom-addons
+```
+
+Jika seluruh pengecekan berhasil, Odoo 14 sudah siap digunakan.
+
+---
+
+# 27. Struktur Final
+
+Struktur project yang diharapkan:
+
+```text
+/mnt/storage/odoo14/
+├── Dockerfile
+├── docker-compose.yml
+│
+├── config/
+│   └── odoo.conf
+│
+├── addons/
+│
+├── custom_addons/
+│   └── odoo_home_screen_14/
+│       ├── __init__.py
+│       ├── __manifest__.py
+│       └── ...
+│
+├── odoo-data/
+│   ├── filestore/
+│   └── odoo.log
+│
+├── postgres/
+│
+├── scripts/
+│
+└── backups/
+```
+
+---
+
+# Important
+
+## Jangan commit password production
+
+File berikut mengandung credential:
+
+```text
+config/odoo.conf
+```
+
+Pastikan password production tidak dimasukkan ke GitHub.
+
+Gunakan placeholder seperti:
+
+```ini
+admin_passwd = CHANGE_THIS_MASTER_PASSWORD
+db_password = CHANGE_THIS_DATABASE_PASSWORD
+```
+
+## Jangan commit data production
+
+Jangan upload folder berikut ke repository:
+
+```text
+postgres/
+odoo-data/
+backups/
+```
+
+## Jangan commit secrets
+
+Tambahkan `.gitignore`:
+
+```bash
+nano /mnt/storage/odoo14/.gitignore
+```
+
+Isi:
+
+```gitignore
+# Odoo runtime data
+odoo-data/
+
+# PostgreSQL data
+postgres/
+
+# Backups
+backups/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Logs
+*.log
+
+# Environment / secrets
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+```
+
+Simpan:
+
+```text
+Ctrl + O
+Enter
+Ctrl + X
+```
+
+Cek:
+
+```bash
+cat /mnt/storage/odoo14/.gitignore
+```
+
+---
+
+# Git Repository
+
+Setelah project siap:
+
+```bash
+cd /mnt/storage/odoo14
+```
+
+Inisialisasi Git:
+
+```bash
+git init
+```
+
+Tambahkan file:
+
+```bash
+git add Dockerfile docker-compose.yml config/odoo.conf .gitignore
+```
+
+Cek:
+
+```bash
+git status
+```
+
+Buat commit:
+
+```bash
+git commit -m "Initial Odoo 14 Docker setup"
+```
+
+Tambahkan remote GitHub:
+
+```bash
+git remote add origin https://github.com/USERNAME/REPOSITORY.git
+```
+
+Rename branch:
+
+```bash
+git branch -M main
+```
+
+Push:
+
+```bash
+git push -u origin main
+```
+
+> Pastikan `config/odoo.conf` sudah menggunakan password placeholder sebelum melakukan `git push`.
